@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DBH Builder</title>
+
+  <style>
+    :root {
+  --bg: #0f1115;
+  --panel: #151821;
+  --text: #e5e7ef;
+  --accent: #7dd3fc;
+  --ok: #34d399;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: linear-gradient(180deg, #0f1115 0%, #0e1320 100%); color: var(--text); }
+
+header {
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(10px);
+  background: rgba(15,17,21,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+header .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 40px);
+}
+
+.gallery {
+  display: grid;
+  gap: 18px;
+  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  justify-content: center;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  border-color: rgba(125,211,252,.35);
+}
+
+.card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  background:#0b0e14;
+}
+
+.card figcaption {
+  padding: 12px 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* PAGE VOITURE */
+.backbar { display: flex; align-items: center; gap: 8px; margin: 12px 0 18px; }
+
+.backbtn {
+  display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius: 12px;
+  background: #121522; border: 1px solid rgba(255,255,255,.08); color: var(--text);
+  cursor:pointer; transition: background .15s ease, transform .12s ease;
+}
+.backbtn:hover { background:#171b2a; }
+.backbtn:active { transform: translateY(1px); }
+
+.car-hero {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px;
+}
+.car-hero img {
+  width: 400px;
+  max-width: 90%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.06);
+  background: #0b0e14;
+}
+.car-title { font-size: clamp(22px, 3.3vw, 30px); margin: 8px 0; text-align: center; }
+
+.parts {
+  display: grid;
+  grid-template-columns: repeat(2, 300px);
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+@media (max-width: 640px) { .parts { grid-template-columns: 1fr; } }
+
+.part {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 300px; height: 80px;
+  background: var(--panel);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  padding: 8px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.part img { width: 64px; height: 64px; object-fit: contain; background: #0b0e14; border-radius: 10px; }
+.part .name { font-weight: 600; }
+.part input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+.part.checked { border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.08); }
+.part.checked .name { color: var(--ok); }
+
+.hidden { display: none !important; }
+
+footer {
+  padding: 20px; margin-top: 40px; background: transparent;
+}
+.footer-content { max-width: 1500px; margin: 0 auto; text-align: center; font-size: 10px; line-height: 1.2; color: inherit; }
+footer.hidden { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+
+  </style>
+
+  
+</head>
+<body>
+  <header>
+  <div class="container">
+    <h1>DBH Builder</h1>
+  </div>
+</header>
+
+<main class="container">
+  <!-- GALERIE -->
+  <section id="gallery" aria-label="Galerie des voitures" class="gallery"></section>
+
+  <!-- PAGE VOITURE -->
+  <section id="carView" class="hidden" aria-live="polite">
+    <div class="backbar">
+      <button class="backbtn" id="backBtn" title="Retour à la liste">⟵ Retour</button>
+    </div>
+
+    <div class="car-hero">
+      <img id="carHeroImg" alt="Illustration du véhicule" />
+      <h2 class="car-title" id="carTitle">Nom du véhicule</h2>
+    </div>
+
+    <div class="parts" id="partsList" aria-label="Liste des pièces"></div>
+  </section>
+</main>
+
+<footer class="hidden">
+  <div class="footer-content">
+    <p>
+      This app was created as a personal project, out of passion for the game Drive Beyond Horizons. It is not official, nor affiliated with the developers of the game.
+    </p>
+    <p>
+      All images and information shown here come from the community wiki: 
+      <a href="https://drivebeyondhorizons.wiki.gg" target="_blank" rel="noopener noreferrer">
+        <strong>drivebeyondhorizons.wiki.gg</strong>
+      </a>
+    </p>
+    <p>
+      Huge thanks to the wiki creators and contributors for their amazing work!
+    </p>
+    <p>
+      I do not claim ownership of any game or wiki content.
+    </p>
+    <p>
+      This app is free, ad-free, and has no commercial purpose. If any content causes concern or needs to be removed, I will gladly take the app down. Just reach out.
+    </p>
+    <p>
+      Thank you — and enjoy the game! Contact: <strong>beningster@gmail.com</strong>
+    </p>
+    <p>
+      <strong style="color:red;">
+        NOTE: Your vehicle progress (checked parts) is saved locally in your browser. Switching devices or browsers will not carry over your progress.
+      </strong>
+    </p>
+    <p>Last update 20/08/2025
+  </div>
+</footer>
+
+
+  <script>
+    const CARS = [
+{ id:'dada', name:'Dada', image:'https://drivebeyondhorizons.wiki.gg/images/1/1e/Full_Dada.png?175626', parts:[
+      { id: "1", name: "Engine", image: "https://drivebeyondhorizons.wiki.gg/images/e/e0/I4engine.png?c2c840" },
+      { id: "2", name: "Radiator", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/3c/DadaRadiator.png/120px-DadaRadiator.png?6a1c24" },
+      { id: "3", name: "Battery", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/01/DadaBattery50A.png/120px-DadaBattery50A.png?f2b15b" },
+      { id: "4", name: "Windshield", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/25/DadaWindshield.png/120px-DadaWindshield.png?bcd57f" },
+      { id: "5", name: "Rear window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c9/DadaRearWindow.png/120px-DadaRearWindow.png?31f713" },
+      { id: "6", name: "Left front door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/35/DadaFrontDoorL.png/120px-DadaFrontDoorL.png?6e9b0d" },
+      { id: "7", name: "Right front door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d4/DadaFrontDoorR.png/120px-DadaFrontDoorR.png?d1327c" },
+      { id: "8", name: "Left rear door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f0/DadaRearDoorL.png/120px-DadaRearDoorL.png?8a7a61" },
+      { id: "9", name: "Right rear door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e4/DadaRearDoorR.png/120px-DadaRearDoorR.png?5fc37d" },
+      { id: "10", name: "Left mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c6/DadaMirrorLeft.png/120px-DadaMirrorLeft.png?349347" },
+      { id: "11", name: "Right mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/7d/DadaMirrorRight.png/120px-DadaMirrorRight.png?d4369e" },
+      { id: "12", name: "Hood", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c2/DadaHood.png/120px-DadaHood.png?d5552e" },
+      { id: "13", name: "Trunk lid", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cb/DadaTrunkLid.png/120px-DadaTrunkLid.png?a7e2b5" },
+      { id: "14", name: "Front bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/12/DadaFrontBumper.png/120px-DadaFrontBumper.png?d4227b" },
+      { id: "15", name: "Rear bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/DadaRearBumper.png/120px-DadaRearBumper.png?e50357" },
+      { id: "16", name: "Grille", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/DadaGrill.png/120px-DadaGrill.png?6fa25e" },
+      { id: "17", name: "Left molding", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9e/DadaTrim.png/120px-DadaTrim.png?1d5592" },
+      { id: "18", name: "Right molding", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9e/DadaTrim.png/120px-DadaTrim.png?1d5592" },
+      { id: "19", name: "Fuel tank lid", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/24/DadaFuelTankLid.png/120px-DadaFuelTankLid.png?232529" },
+      { id: "20", name: "Front license plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9" },
+      { id: "21", name: "Rear licence plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9" },
+      { id: "22", name: "Front left seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/DadaSeat.png/120px-DadaSeat.png?6ec2a7" },
+      { id: "23", name: "Front right seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/DadaSeat.png/120px-DadaSeat.png?6ec2a7" },
+      { id: "24", name: "Left rear seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/DadaSeat.png/120px-DadaSeat.png?6ec2a7" },
+      { id: "25", name: "Right rear seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/DadaSeat.png/120px-DadaSeat.png?6ec2a7" },
+      { id: "26", name: "Gas pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/DadaPedal.png/120px-DadaPedal.png?1a523d" },
+      { id: "27", name: "Brake pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/DadaPedal.png/120px-DadaPedal.png?1a523d" },
+      { id: "28", name: "Clutch pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/DadaPedal.png/120px-DadaPedal.png?1a523d" },
+      { id: "29", name: "Steering Wheel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b8/DadaSteeringWheel.png/120px-DadaSteeringWheel.png?e9425el" },
+      { id: "30", name: "Handbrake", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/01/Handbrake.png/120px-Handbrake.png?6d93e8" },
+      { id: "31", name: "Shifter", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/DadaShifter.png/120px-DadaShifter.png?bae343" },
+      { id: "32", name: "Ignition", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/49/Ignition.png/120px-Ignition.png?b71a6b" },
+      { id: "33", name: "Dashboard", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e6/DadaDashboard.png/120px-DadaDashboard.png?a0dc8b" },
+      { id: "34", name: "Radio", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/CarRadio.png/120px-CarRadio.png?9de599" },
+      { id: "35", name: "Left seat belt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+      { id: "36", name: "Right seat belt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+      { id: "37", name: "Left seat belt buckle", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+      { id: "38", name: "Right seat belt buckle", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+      { id: "39", name: "Wheel 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/DadaWheelRim.png/120px-DadaWheelRim.png?30392b" },
+      { id: "40", name: "Wheel 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/DadaWheelRim.png/120px-DadaWheelRim.png?30392b" },
+      { id: "41", name: "Wheel 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/DadaWheelRim.png/120px-DadaWheelRim.png?30392b" },
+      { id: "42", name: "Wheel 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/DadaWheelRim.png/120px-DadaWheelRim.png?30392b" },
+      { id: "43", name: "Hubcap 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Hubcap.png/120px-Hubcap.png?f3e16e" },
+      { id: "44", name: "Hubcap 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Hubcap.png/120px-Hubcap.png?f3e16e" },
+      { id: "45", name: "Hubcap 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Hubcap.png/120px-Hubcap.png?f3e16e" },
+      { id: "46", name: "Hubcap 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Hubcap.png/120px-Hubcap.png?f3e16e" },
+      { id: "47", name: "Tire 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/DadaTire.png/120px-DadaTire.png?dca19b" },
+      { id: "48", name: "Tire 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/DadaTire.png/120px-DadaTire.png?dca19b" },
+      { id: "49", name: "Tire 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/DadaTire.png/120px-DadaTire.png?dca19b" },
+      { id: "50", name: "Tire 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/DadaTire.png/120px-DadaTire.png?dca19b" },
+      { id: "51", name: "Left headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8b/DadaHeadlight.png/120px-DadaHeadlight.png?c1242d" },
+      { id: "52", name: "Right headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8b/DadaHeadlight.png/120px-DadaHeadlight.png?c1242d" },
+      { id: "53", name: "Left turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/DadaTurnSignalL.png/120px-DadaTurnSignalL.png?bbf82d" },
+      { id: "54", name: "Right turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/40/DadaTurnSignalR.png/120px-DadaTurnSignalR.png?9dbca7" },
+      { id: "55", name: "Left tail light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/59/DadaTailLightL.png/120px-DadaTailLightL.png?f404a4" },
+      { id: "56", name: "Right tail light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6c/DadaTailLightR.png/120px-DadaTailLightR.png?77647a" },
+      { id: "57", name: "Interior light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+      { id: "58", name: "Left trunk light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+      { id: "59", name: "Right trunk light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" }
+      ]},
+{ id:'musgoat', name:'Musgoat', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/a/af/Musgoat_full.png/500px-Musgoat_full.png?533d9d', parts:[
+      { id: "1", name: "Engine", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9d/V8engine.png/120px-V8engine.png?147c3e" },
+      { id: "2", name: "Radiator", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/3c/DadaRadiator.png/120px-DadaRadiator.png?6a1c24" },
+      { id: "3", name: "Battery", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/01/DadaBattery50A.png/120px-DadaBattery50A.png?f2b15b" },
+     { id: "4", name: "Windshield", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fa/MusgoatWindshield.png/120px-MusgoatWindshield.png?d81241" },
+      { id: "5", name: "Rear window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c0/MusgoatRearWindow.png/120px-MusgoatRearWindow.png?ff6f28g" },
+      { id: "6", name: "Left door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8a/MusgoatFrontDoorL.png/120px-MusgoatFrontDoorL.png?aa02de" },
+      { id: "7", name: "Right door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/02/MusgoatFrontDoorR.png/120px-MusgoatFrontDoorR.png?a1a88e" },
+      { id: "8", name: "Left mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d6/MusgoatMirrorLeft.png/120px-MusgoatMirrorLeft.png?d485e5" },
+      { id: "9", name: "Right mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/41/MusgoatMirrorRight.png/120px-MusgoatMirrorRight.png?ce4539" },
+      { id: "10", name: "Hood", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5c/MusgoatHood.png/120px-MusgoatHood.png?6169e7" },
+      { id: "11", name: "Trunk lid", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/24/MusgoatTrunkLid.png/120px-MusgoatTrunkLid.png?f87bbb" },
+      { id: "12", name: "Front bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9e/MusgoatFrontBumper.png/120px-MusgoatFrontBumper.png?c5cf9c" },
+      { id: "13", name: "Rear bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bf/MusgoatRearBumper.png/120px-MusgoatRearBumper.png?6a2dfc" },
+      { id: "14", name: "Grille", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/0a/MusgoatGrill.png/120px-MusgoatGrill.png?64211d" },
+     { id: "15", name: "Fuel tank lid", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c6/MusgoatFuelTankLid.png/120px-MusgoatFuelTankLid.png?c73b98" },
+      { id: "16", name: "Front license plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9" },
+      { id: "17", name: "Rear licence plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9" },
+      { id: "18", name: "Left front seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/35/MusgoatSeat.png/120px-MusgoatSeat.png?d3e7cc" },
+      { id: "19", name: "Right front seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/35/MusgoatSeat.png/120px-MusgoatSeat.png?d3e7cc" },
+      { id: "20", name: "Gas pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cd/MusgoatPedal.png/120px-MusgoatPedal.png?df9288" },
+      { id: "21", name: "Brake pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cd/MusgoatPedal.png/120px-MusgoatPedal.png?df9288" },
+      { id: "22", name: "Clutch pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cd/MusgoatPedal.png/120px-MusgoatPedal.png?df9288" },
+      { id: "23", name: "Steering Wheel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/Steering_Wheel_Musgoat.png/120px-Steering_Wheel_Musgoat.png?cfddc2" },
+      { id: "24", name: "Handbrake", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/01/Handbrake.png/120px-Handbrake.png?6d93e8" },
+      { id: "25", name: "Shifter", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/41/MusgoatShifter.png/120px-MusgoatShifter.png?a24d91" },
+      { id: "26", name: "Ignition", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/49/Ignition.png/120px-Ignition.png?b71a6b" },
+      { id: "27", name: "Dashboard", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/0b/Mustgoat_dashboard.png/120px-Mustgoat_dashboard.png?3c7b78" },
+      { id: "28", name: "Radio", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/CarRadio.png/120px-CarRadio.png?9de599" },
+      { id: "29", name: "Left seatbelt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+      { id: "30", name: "Right seatbelt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+      { id: "31", name: "Wheel 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/MusgoatWheelRim.png/120px-MusgoatWheelRim.png?770300" },
+      { id: "32", name: "Wheel 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/MusgoatWheelRim.png/120px-MusgoatWheelRim.png?770300" },
+      { id: "33", name: "Wheel 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/MusgoatWheelRim.png/120px-MusgoatWheelRim.png?770300" },
+      { id: "34", name: "Wheel 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/MusgoatWheelRim.png/120px-MusgoatWheelRim.png?770300" },
+      { id: "35", name: "Tire 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/MusgoatTire.png/120px-MusgoatTire.png?6d06e0" },
+      { id: "36", name: "Tire 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/MusgoatTire.png/120px-MusgoatTire.png?6d06e0" },
+      { id: "37", name: "Tire 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/MusgoatTire.png/120px-MusgoatTire.png?6d06e0" },
+      { id: "38", name: "Tire 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/MusgoatTire.png/120px-MusgoatTire.png?6d06e0" },
+      { id: "39", name: "Left headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9c/MusgoatHeadlight.png/120px-MusgoatHeadlight.png?79529f" },
+      { id: "40", name: "Right headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9c/MusgoatHeadlight.png/120px-MusgoatHeadlight.png?79529f" },
+      { id: "41", name: "Left front turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/78/MusgoatTurnSignalL.png/120px-MusgoatTurnSignalL.png?bf0688" },
+      { id: "42", name: "Right front turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/18/MusgoatTurnSignalR.png/120px-MusgoatTurnSignalR.png?72b2e1" },
+      { id: "43", name: "Left fog light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/Musgoat_grill_light.png/120px-Musgoat_grill_light.png?78edd3" },
+      { id: "44", name: "Right fog light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/Musgoat_grill_light.png/120px-Musgoat_grill_light.png?78edd3" },
+      { id: "45", name: "Left brake light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/73/MusgoatTailLight.png/120px-MusgoatTailLight.png?e0ad65.png" },
+      { id: "46", name: "Right brake light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/73/MusgoatTailLight.png/120px-MusgoatTailLight.png?e0ad65" },
+      { id: "47", name: "Interior dome light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" }
+      ]},
+{ id:'c18', name:'C18', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/C18.png/500px-C18.png?8b3813', parts:[
+  { id: "1",  name: "Engine",      image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/C18Engine.png/120px-C18Engine.png?29029f" },
+  { id: "2",  name: "Radiator",    image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/87/C18Radiator.png/120px-C18Radiator.png?cc3409" },
+  { id: "3",  name: "Battery",     image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f1/Cropped_C18Battery.png/120px-Cropped_C18Battery.png?aeca4e" },
+  { id: "4",  name: "Windshield",  image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/a1/C18Windshield.png/120px-C18Windshield.png?7e193f" },
+  { id: "5",  name: "Rear window 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ac/Cropped_C18WindowRearDS.png/120px-Cropped_C18WindowRearDS.png?bbe89f" },
+  { id: "6",  name: "Rear window 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ac/Cropped_C18WindowRearDS.png/120px-Cropped_C18WindowRearDS.png?bbe89f" },
+  { id: "7",  name: "Left door window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ac/Cropped_C18WindowRearDS.png/120px-Cropped_C18WindowRearDS.png?bbe89f" },
+  { id: "8",  name: "Right door window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/be/C18DoorWindowRight.png/120px-C18DoorWindowRight.png?d5fd46" },
+  { id: "9",  name: "Left side window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/91/Side_window_c18.png/120px-Side_window_c18.png?bd4111" },
+  { id: "10", name: "Right side window", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/91/Side_window_c18.png/120px-Side_window_c18.png?bd4111" },
+  { id: "11", name: "Left front door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/22/Left_door_c18.png/120px-Left_door_c18.png?d0ec3c" },
+  { id: "12", name: "Right front door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Cropped_C18DoorFrontPS.png/120px-Cropped_C18DoorFrontPS.png?3a16c1" },
+  { id: "13", name: "Left rear doord", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/66/Rear_left_door_c18.png/120px-Rear_left_door_c18.png?d92c1b" },
+  { id: "14", name: "Right rear door", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/12/Rear_right_door_c18.png/120px-Rear_right_door_c18.png?36c839" },
+  { id: "15", name: "Left mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8e/C18MirrorLeft.png/120px-C18MirrorLeft.png?47cbb9" },
+  { id: "16", name: "Right mirror", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/0f/C18MirrorRight.png/120px-C18MirrorRight.png?34528e" },
+  { id: "17", name: "Hood", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c9/Hood_c18.png/120px-Hood_c18.png?4ffa67" },
+  { id: "18", name: "Front bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/63/Front_bumper_c18.png/120px-Front_bumper_c18.png?f5e972" },
+  { id: "19", name: "Rear bumper", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f5/Rear_bumper_c18.png/120px-Rear_bumper_c18.png?f61590" },
+  { id: "20", name: "Grille", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/3e/Grille_c18.png/120px-Grille_c18.png?eea4f6" },
+  { id: "21", name: "Antenna", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8a/Antenna_c18.png/120px-Antenna_c18.png?a670b9" },
+{ id: "22", name: "Front license plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/67/Cropped_C18LicensePlateFront.png/120px-Cropped_C18LicensePlateFront.png?d21d18" },
+{ id: "23", name: "Rear licence plate", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/64/Rear_license_plate_c18.png/120px-Rear_license_plate_c18.png?29d103" },
+{ id: "24", name: "Left front door panel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/7b/Left_front_door_panel_c18.png/120px-Left_front_door_panel_c18.png?ad932b" },
+{ id: "25", name: "Right front door panel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5c/Right_front_door_panel_c18.png/120px-Right_front_door_panel_c18.png?7171db" },
+{ id: "26", name: "Left rear door panel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5f/C18_LeftRearDoorPanel.png/120px-C18_LeftRearDoorPanel.png?8cefcb" },
+{ id: "27", name: "Right rear door panel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/31/C18_rightRearDoorPanel.png/120px-C18_rightRearDoorPanel.png?359cd4" },
+{ id: "28", name: "Front left seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/ed/Front_seat_c18.png/120px-Front_seat_c18.png?b60118" },
+{ id: "29", name: "Front right seat", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/DadaSeat.png/120px-DadaSeat.png?6ec2a7" },
+{ id: "30", name: "Gas pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d4/Gas_pedal_c18.png/120px-Gas_pedal_c18.png?2b180e" },
+{ id: "31", name: "Brake pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/Brake_pedal_c18.png/120px-Brake_pedal_c18.png?86b94e" },
+{ id: "32", name: "Clutch pedal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/29/Clutch_pedal_c18.png/120px-Clutch_pedal_c18.png?afe223" },
+{ id: "33", name: "Steering Wheel", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9d/Steering_wheel_c18.png/120px-Steering_wheel_c18.png?f64806" },
+{ id: "34", name: "Handbrake", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e7/Handbrake_c18.png/120px-Handbrake_c18.png?413b4c" },
+{ id: "35", name: "Shifter", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fd/Shifter_c18.png/120px-Shifter_c18.png?449b93" },
+{ id: "36", name: "Ignition", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ae/Ignition_c18.png/120px-Ignition_c18.png?e1e898" },
+{ id: "37", name: "Dashboard", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/39/Dashboard_c18.png/120px-Dashboard_c18.png?7e222e" },
+{ id: "38", name: "Radio", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/Radio_c18.png/120px-Radio_c18.png?b47518" },
+{ id: "39", name: "Glovebox lid", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fc/Glovebox_lid_c18.png/120px-Glovebox_lid_c18.png?b5bc6b" },
+{ id: "40", name: "Left visor", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Left_visor_c18.png/120px-Left_visor_c18.png?64deff" },
+{ id: "41", name: "Right visor", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/Right_visor_c18.png/120px-Right_visor_c18.png?681126" },
+{ id: "42", name: "Left seatbelt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+{ id: "43", name: "Right seatbelt anchor point", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+{ id: "44", name: "Left seatbelt latch", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+{ id: "45", name: "Right seatbelt latch", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+{ id: "46", name: "Wheel 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fd/Wheel_c18.png/120px-Wheel_c18.png?c897b3" },
+{ id: "47", name: "Wheel 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fd/Wheel_c18.png/120px-Wheel_c18.png?c897b3" },
+{ id: "48", name: "Wheel 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fd/Wheel_c18.png/120px-Wheel_c18.png?c897b3" },
+{ id: "49", name: "Wheel 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/fd/Wheel_c18.png/120px-Wheel_c18.png?c897b3" },
+{ id: "50", name: "Tires 1", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/75/Tire_c18.png/120px-Tire_c18.png?afc5af" },
+{ id: "51", name: "Tires 2", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/75/Tire_c18.png/120px-Tire_c18.png?afc5af" },
+{ id: "52", name: "Tires 3", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/75/Tire_c18.png/120px-Tire_c18.png?afc5af" },
+{ id: "53", name: "Tires 4", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/75/Tire_c18.png/120px-Tire_c18.png?afc5af" },
+{ id: "54", name: "Left headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Left_headlight_c18.png/120px-Left_headlight_c18.png?28a48e" },
+{ id: "55", name: "Right headlight", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4f/Right_headlight_c18.png/120px-Right_headlight_c18.png?140f41" },
+{ id: "56", name: "Left front turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b8/Front_turn_signal_c18.png/120px-Front_turn_signal_c18.png?6c442b" },
+{ id: "57", name: "Right front turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b8/Front_turn_signal_c18.png/120px-Front_turn_signal_c18.png?6c442b" },
+{ id: "58", name: "Left front side turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/Front_side_turn_signal_c18.png/120px-Front_side_turn_signal_c18.png?c0425d" },
+{ id: "59", name: "Right front side turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/Front_side_turn_signal_c18.png/120px-Front_side_turn_signal_c18.png?c0425d" },
+{ id: "60", name: "Left brake light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cb/Left_brake_light_c18.png/120px-Left_brake_light_c18.png?51b41b" },
+{ id: "61", name: "Right brake light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Cropped_C18TailLightPS.png/120px-Cropped_C18TailLightPS.png?e475ad" },
+{ id: "62", name: "Interior front light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+{ id: "63", name: "Interior rear light", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+      ]},
+{ id:'bonphiac', name:'Bonphiac', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/0/00/Bonphiac.JPG/500px-Bonphiac.JPG?b0f7b5', parts:[
+{ id: "1",  name: "Engine",               image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8c/BonphiacEngine.png/120px-BonphiacEngine.png?efa5f4" },
+{ id: "2",  name: "Radiator",             image: "https://drivebeyondhorizons.wiki.gg/images/thumb/8/85/BonphiacRadiator.png/120px-BonphiacRadiator.png?980846" },
+{ id: "3",  name: "Battery",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cb/BonphiacBattery.png/120px-BonphiacBattery.png?73f57e" },
+{ id: "4",  name: "Windshield",           image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/9c/BonphiacWindshield.png/120px-BonphiacWindshield.png?f2a96a" },
+{ id: "5",  name: "Rear window",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b8/BonphiacWindowRear.png/120px-BonphiacWindowRear.png?e9d4d5" },
+{ id: "6",  name: "Left door",            image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/11/BonphiacDoorL.png/120px-BonphiacDoorL.png?e9fe0e" },
+{ id: "7",  name: "Right door",           image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/15/BonphiacDoorR.png/120px-BonphiacDoorR.png?158256" },
+{ id: "8",  name: "Left mirror",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/07/BonphiacMirrorL.png/120px-BonphiacMirrorL.png?ce3eb5" },
+{ id: "9",  name: "Right mirror",         image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/30/BonphiacMirrorR.png/120px-BonphiacMirrorR.png?464896" },
+{ id: "10", name: "Hood",                 image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/97/BonphiacHood.png/120px-BonphiacHood.png?9207b4" },
+{ id: "11", name: "Hood scoop",           image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ae/BonphiacHoodScoop.png/120px-BonphiacHoodScoop.png?8bdc99" },
+{ id: "12", name: "Trunk lid",            image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b5/BonphiacTrunk.png/120px-BonphiacTrunk.png?25c8ce" },
+{ id: "13", name: "Front bumper",         image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/43/BonphiacBumperFront.png/120px-BonphiacBumperFront.png?1f13ed" },
+{ id: "14", name: "Rear bumper",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/1/1d/BonphiacBumperRear.png/120px-BonphiacBumperRear.png?9f0523" },
+{ id: "15", name: "Left grille",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/a2/BonphiacHeadlightFrameR.png/120px-BonphiacHeadlightFrameR.png?c609d7" },
+{ id: "16", name: "Right grille",         image: "https://drivebeyondhorizons.wiki.gg/images/thumb/e/ed/BonphiacHeadlightFrameL.png/120px-BonphiacHeadlightFrameL.png?aec6de" },
+{ id: "17", name: "Front license plate",  image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/77/BonphiacLicensePlateFront.png/120px-BonphiacLicensePlateFront.png?2dd3c0" },
+{ id: "18", name: "Rear licence plate",   image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6b/BonphiacLicensePlateRear.png/120px-BonphiacLicensePlateRear.png?7afc6a" },
+{ id: "19", name: "Left door panel",      image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/a0/BonphiacDoorPanelL.png/120px-BonphiacDoorPanelL.png?293a9e" },
+{ id: "20", name: "Right door panel",     image: "https://drivebeyondhorizons.wiki.gg/images/thumb/a/a6/BonphiacDoorPanelR.png/120px-BonphiacDoorPanelR.png?1dea09" },
+{ id: "21", name: "Left front seat",      image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/29/BonphiacSeatFront.png/120px-BonphiacSeatFront.png?e4cb92" },
+{ id: "22", name: "Right front seat",     image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/29/BonphiacSeatFront.png/120px-BonphiacSeatFront.png?e4cb92" },
+{ id: "23", name: "Left rear seat",       image: "https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/BonphiacSeatRear.png/120px-BonphiacSeatRear.png?ab2ff4" },
+{ id: "24", name: "Right rear seat",      image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/BonphiacSeatRearPS.png/120px-BonphiacSeatRearPS.png?be5b03" },
+{ id: "25", name: "Gas pedal",            image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5c/BonphiacPedalGas.png/120px-BonphiacPedalGas.png?49050c" },
+{ id: "26", name: "Brake pedal",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Cropped_BonphiacPedalBrake.png/120px-Cropped_BonphiacPedalBrake.png?f206cf" },
+{ id: "27", name: "Clutch pedal",         image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/95/Cropped_BonphiacPedalClutch.png/120px-Cropped_BonphiacPedalClutch.png?b4c429" },
+{ id: "28", name: "Steering Wheel",       image: "https://drivebeyondhorizons.wiki.gg/images/thumb/c/ce/BonphiacSteeringWheel.png/120px-BonphiacSteeringWheel.png?c84d45" },
+{ id: "29", name: "Handbrake",            image: "https://drivebeyondhorizons.wiki.gg/images/thumb/7/77/BonphiacHandbrake.png/120px-BonphiacHandbrake.png?4d8cd2" },
+{ id: "30", name: "Shifter",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/Cropped_BonphiacGearShift.png/120px-Cropped_BonphiacGearShift.png?87ddd6" },
+{ id: "31", name: "Ignition",             image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f9/BonphiacIgnition.png/120px-BonphiacIgnition.png?b4ce5d" },
+{ id: "32", name: "Dashboard",            image: "https://drivebeyondhorizons.wiki.gg/images/thumb/2/24/BonphiacDashboard.png/120px-BonphiacDashboard.png?9a4ea5" },
+{ id: "33", name: "Radio",                image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5d/BonphiacRadio.png/120px-BonphiacRadio.png?f6be2b" },
+{ id: "34", name: "Glovebox lid",         image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b7/BonphiacGlovebox.png/120px-BonphiacGlovebox.png?5d58f4" },
+{ id: "35", name: "Left floor mat",       image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/63/Floormart_left.png/120px-Floormart_left.png?3e62c6" },
+{ id: "36", name: "Right floor mat",      image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/61/BonphiacFloormat.png/120px-BonphiacFloormat.png?9bf145" },
+{ id: "37", name: "Left visor",           image: "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bf/BonphiacVisorL.png/120px-BonphiacVisorL.png?a43cad" },
+{ id: "38", name: "Right visor",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/Cropped_BonphiacVisorRight.png/120px-Cropped_BonphiacVisorRight.png?7b3bd2" },
+{ id: "39", name: "Wheel 1",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/Cropped_BonphiacWheel.png/120px-Cropped_BonphiacWheel.png?be83e8" },
+{ id: "40", name: "Wheel 2",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/Cropped_BonphiacWheel.png/120px-Cropped_BonphiacWheel.png?be83e8" },
+{ id: "41", name: "Wheel 3",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/Cropped_BonphiacWheel.png/120px-Cropped_BonphiacWheel.png?be83e8" },
+{ id: "42", name: "Wheel 4",              image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/Cropped_BonphiacWheel.png/120px-Cropped_BonphiacWheel.png?be83e8" },
+{ id: "43", name: "Tire 1",               image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/BonphiacTire.png/120px-BonphiacTire.png?4da888" },
+{ id: "44", name: "Tire 2",               image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/BonphiacTire.png/120px-BonphiacTire.png?4da888" },
+{ id: "45", name: "Tire 3",               image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/BonphiacTire.png/120px-BonphiacTire.png?4da888" },
+{ id: "46", name: "Tire 4",               image: "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/BonphiacTire.png/120px-BonphiacTire.png?4da888" },
+{ id: "47", name: "Headlight 1",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Cropped_BonphiacHeadlight.png/120px-Cropped_BonphiacHeadlight.png?761714" },
+{ id: "48", name: "Headlight 2",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Cropped_BonphiacHeadlight.png/120px-Cropped_BonphiacHeadlight.png?761714" },
+{ id: "49", name: "Headlight 3",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Cropped_BonphiacHeadlight.png/120px-Cropped_BonphiacHeadlight.png?761714" },
+{ id: "50", name: "Headlight 4",          image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Cropped_BonphiacHeadlight.png/120px-Cropped_BonphiacHeadlight.png?761714" },
+{ id: "51", name: "Left front turn signal",  image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/64/BonphiacFrontTurnSignal.png/120px-BonphiacFrontTurnSignal.png?6bd228" },
+{ id: "52", name: "Right front turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/6/64/BonphiacFrontTurnSignal.png/120px-BonphiacFrontTurnSignal.png?6bd228" },
+{ id: "53", name: "Left brake light",        image: "https://drivebeyondhorizons.wiki.gg/images/thumb/9/93/BonphiacBrakeLightL.png/120px-BonphiacBrakeLightL.png?f389aa" },
+{ id: "54", name: "Right brake light",       image: "https://drivebeyondhorizons.wiki.gg/images/thumb/5/5e/BonphiacBrakeLightR.png/120px-BonphiacBrakeLightR.png?5434c8" },
+{ id: "55", name: "Left rear side turn signal",  image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/3a/BonphiacSideTurnSignalRear.png/120px-BonphiacSideTurnSignalRear.png?98e740" },
+{ id: "56", name: "Right rear side turn signal", image: "https://drivebeyondhorizons.wiki.gg/images/thumb/3/3a/BonphiacSideTurnSignalRear.png/120px-BonphiacSideTurnSignalRear.png?98e740" },
+{ id: "57", name: "Interior dome light",    image: "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d0/BonphiacDomeLight.png/120px-BonphiacDomeLight.png?2b71ae" },
+      ]},  
+{ id:'gtr', name:'GTR', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/8/8f/GTR.png/500px-GTR.png?681d02', parts:[
+    {"id":"1","name":"Engine","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f5/Captura_de_tela_2025-04-09_203824_-_Copia.png/120px-Captura_de_tela_2025-04-09_203824_-_Copia.png?8ff658"},
+    {"id":"2","name":"Radiator","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bc/Captura_de_tela_2025-04-09_203905_-_Copia.png/120px-Captura_de_tela_2025-04-09_203905_-_Copia.png?df8fd2"},
+    {"id":"3","name":"Battery","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a3/Captura_de_tela_2025-04-09_203915_-_Copia.png/120px-Captura_de_tela_2025-04-09_203915_-_Copia.png?bce518"},
+    {"id":"4","name":"Windshield","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5a/%D0%92%D0%B5%D1%82%D1%80%D0%BE%D0%B2%D0%BE%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png/120px-%D0%92%D0%B5%D1%82%D1%80%D0%BE%D0%B2%D0%BE%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png?218c7f"},
+    {"id":"5","name":"Rear window","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/1/14/Captura_de_tela_2025-04-10_130603.png/120px-Captura_de_tela_2025-04-10_130603.png?b21bf2"},
+    {"id":"6","name":"Left door","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/8/83/Captura_de_tela_2025-04-10_130630.png/120px-Captura_de_tela_2025-04-10_130630.png?d93fd3"},
+    {"id":"7","name":"Right door","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/Captura_de_tela_2025-04-10_130645.png/120px-Captura_de_tela_2025-04-10_130645.png?7a9dfd"},
+{"id":"8","name":"Left mirror","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/e/ef/Captura_de_tela_2025-04-10_130704.png/120px-Captura_de_tela_2025-04-10_130704.png?becba5"},
+{"id":"9","name":"Right mirror","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/2/23/Captura_de_tela_2025-04-10_130730.png/120px-Captura_de_tela_2025-04-10_130730.png?2205ba"},
+{"id":"10","name":"Hood","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d7/Captura_de_tela_2025-04-10_133209.png/120px-Captura_de_tela_2025-04-10_133209.png?5ad17b"},
+{"id":"11","name":"Grille","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/4/47/%D0%A0%D0%B5%D1%88%D0%B5%D1%82%D0%BA%D0%B0.png/120px-%D0%A0%D0%B5%D1%88%D0%B5%D1%82%D0%BA%D0%B0.png?407bfd"},
+{"id":"12","name":"Trunk lid","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/0/03/Captura_de_tela_2025-04-10_133215.png/120px-Captura_de_tela_2025-04-10_133215.png?b12106"},
+{"id":"13","name":"Front bumper","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/3/37/Captura_de_tela_2025-04-10_133251.png/120px-Captura_de_tela_2025-04-10_133251.png?eb802d"},
+{"id":"14","name":"Rear bumper","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c5/Captura_de_tela_2025-04-10_133304.png/120px-Captura_de_tela_2025-04-10_133304.png?ed927c"},
+{"id":"15","name":"Grille","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fa/Captura_de_tela_2025-04-10_133234.png/120px-Captura_de_tela_2025-04-10_133234.png?1b61de"},
+{"id":"16","name":"Fuel tank lid","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d5/Captura_de_tela_2025-04-10_131819.png/120px-Captura_de_tela_2025-04-10_131819.png?841722"},
+{"id":"17","name":"Front license plate","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Captura_de_tela_2025-04-10_130913.png/120px-Captura_de_tela_2025-04-10_130913.png?3e4446"},
+{"id":"18","name":"Rear licence plate","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Captura_de_tela_2025-04-10_130913.png/120px-Captura_de_tela_2025-04-10_130913.png?3e4446"},
+{"id":"19","name":"Left door panel","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2e/Captura_de_tela_2025-04-10_131347.png/120px-Captura_de_tela_2025-04-10_131347.png?e43ffc"},
+{"id":"20","name":"Right door panel","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5b/Captura_de_tela_2025-04-10_131336.png/120px-Captura_de_tela_2025-04-10_131336.png?f2e901"},
+{"id":"21","name":"Left front seat","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/64/Cropped_GTRSeatFront.png/120px-Cropped_GTRSeatFront.png?66d38c"},
+{"id":"22","name":"Right front seat","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/64/Cropped_GTRSeatFront.png/120px-Cropped_GTRSeatFront.png?66d38c"},
+{"id":"23","name":"Rear seat","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/90/Captura_de_tela_2025-04-10_132013.png/120px-Captura_de_tela_2025-04-10_132013.png?c49016"},
+{"id":"24","name":"Gas pedal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/8/87/Captura_de_tela_2025-04-10_132046.png/120px-Captura_de_tela_2025-04-10_132046.png?6bdea6"},
+{"id":"25","name":"Brake pedal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/8/84/Captura_de_tela_2025-04-10_132105.png/120px-Captura_de_tela_2025-04-10_132105.png?4282ae"},
+{"id":"26","name":"Clutch pedal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f9/Captura_de_tela_2025-04-10_132120.png/120px-Captura_de_tela_2025-04-10_132120.png?7db7fe"},
+{"id":"27","name":"Steering Wheel","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a6/Captura_de_tela_2025-04-10_132157.png/120px-Captura_de_tela_2025-04-10_132157.png?e36974"},
+{"id":"28","name":"Handbrake","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e4/Captura_de_tela_2025-04-10_132140.png/120px-Captura_de_tela_2025-04-10_132140.png?93c290"},
+{"id":"29","name":"Shifter","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/2/25/Captura_de_tela_2025-04-10_132132.png/120px-Captura_de_tela_2025-04-10_132132.png?36f6c4"},
+{"id":"30","name":"Ignition","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/97/Captura_de_tela_2025-04-10_132912.png/120px-Captura_de_tela_2025-04-10_132912.png?44a2c5"},
+{"id":"31","name":"Dashboard","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/3/34/Cropped_GTRDashboard.png/120px-Cropped_GTRDashboard.png?45be1c"},
+{"id":"32","name":"Radio","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/91/Captura_de_tela_2025-04-10_132250.png/120px-Captura_de_tela_2025-04-10_132250.png?956a30"},
+{"id":"33","name":"Glovebox lid","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0e/Captura_de_tela_2025-04-10_132258.png/120px-Captura_de_tela_2025-04-10_132258.png?29e3f3"},
+{"id":"34","name":"Left floor mat","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1c/Gtr_floor_carpet_left.png/120px-Gtr_floor_carpet_left.png?c6a361"},
+{"id":"35","name":"Right floor mat","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a5/Captura_de_tela_2025-04-10_132310.png/120px-Captura_de_tela_2025-04-10_132310.png?b2b21c"},
+{"id":"36","name":"Left visor","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1b/Cropped_GTRVisorLeft.png/120px-Cropped_GTRVisorLeft.png?899d55"},
+{"id":"37","name":"Right visor","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/Cropped_GTRVisorRight.png/120px-Cropped_GTRVisorRight.png?3de80a"},
+{"id":"38","name":"Wheel 1","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/Captura_de_tela_2025-04-09_131228.png/120px-Captura_de_tela_2025-04-09_131228.png?fa5d0c"},
+{"id":"39","name":"Wheel 2","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/Captura_de_tela_2025-04-09_131228.png/120px-Captura_de_tela_2025-04-09_131228.png?fa5d0c"},
+{"id":"40","name":"Wheel 3","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/Captura_de_tela_2025-04-09_131228.png/120px-Captura_de_tela_2025-04-09_131228.png?fa5d0c"},
+{"id":"41","name":"Wheel 4","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/Captura_de_tela_2025-04-09_131228.png/120px-Captura_de_tela_2025-04-09_131228.png?fa5d0c"},
+{"id":"42","name":"Tire 1","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/Captura_de_tela_2025-04-09_131246.png/120px-Captura_de_tela_2025-04-09_131246.png?f5abf4"},
+{"id":"43","name":"Tire 2","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/Captura_de_tela_2025-04-09_131246.png/120px-Captura_de_tela_2025-04-09_131246.png?f5abf4"},
+{"id":"44","name":"Tire 3","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/Captura_de_tela_2025-04-09_131246.png/120px-Captura_de_tela_2025-04-09_131246.png?f5abf4"},
+{"id":"45","name":"Tire 4","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/Captura_de_tela_2025-04-09_131246.png/120px-Captura_de_tela_2025-04-09_131246.png?f5abf4"},
+{"id":"46","name":"Left headlight","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0d/Captura_de_tela_2025-04-10_143234.png/120px-Captura_de_tela_2025-04-10_143234.png?b74e22"},
+{"id":"47","name":"Right headlight","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0f/Captura_de_tela_2025-04-10_143218.png/120px-Captura_de_tela_2025-04-10_143218.png?2535d9"},
+{"id":"48","name":"Left front bumper turn signal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/1/18/Captura_de_tela_2025-04-10_143255.png/120px-Captura_de_tela_2025-04-10_143255.png?bfd366"},
+{"id":"49","name":"Right front bumper turn signal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/1/18/Captura_de_tela_2025-04-10_143255.png/120px-Captura_de_tela_2025-04-10_143255.png?bfd366"},
+{"id":"50","name":"Front right turn signal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/c/ca/Captura_de_tela_2025-04-10_143343.png/120px-Captura_de_tela_2025-04-10_143343.png?eb3896"},
+{"id":"51","name":"Front left turn signal","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e7/Captura_de_tela_2025-04-10_143405.png/120px-Captura_de_tela_2025-04-10_143405.png?3a0777"},
+{"id":"52","name":"Rear left bumper light","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d6/Captura_de_tela_2025-04-10_143310.png/120px-Captura_de_tela_2025-04-10_143310.png?daea4a"},
+{"id":"53","name":"Rear right bumper light","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d6/Captura_de_tela_2025-04-10_143310.png/120px-Captura_de_tela_2025-04-10_143310.png?daea4a"},
+{"id":"54","name":"Left taillight","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Captura_de_tela_2025-04-10_1442134.png/120px-Captura_de_tela_2025-04-10_1442134.png?9c1958"},
+{"id":"55","name":"Right taillight","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/7/74/Captura_de_tela_2025-04-10_144213.png/120px-Captura_de_tela_2025-04-10_144213.png?c3425c"}
+      ]},
+{ id:'golf', name:'Golf', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Golf.png/500px-Golf.png?32e861', parts:[
+{id:"1",name:"Engine",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/22/Golf_engine.png/120px-Golf_engine.png?1d2f2d"},
+{id:"2",name:"Radiator",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8a/Golf_radiator.png/120px-Golf_radiator.png?f08b5e"},
+{id:"3",name:"Battery",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e8/Golf_battery.png/120px-Golf_battery.png?43fb28"},
+{id:"4",name:"Turbo",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/47/Cropped_Turbo.png/120px-Cropped_Turbo.png?65ddcf"},
+{id:"5",name:"Windshield",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5a/%D0%92%D0%B5%D1%82%D1%80%D0%BE%D0%B2%D0%BE%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png/120px-%D0%92%D0%B5%D1%82%D1%80%D0%BE%D0%B2%D0%BE%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png?218c7f"},
+{id:"6",name:"Rear window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/32/%D0%97%D0%B0%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png/120px-%D0%97%D0%B0%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE.png?414f58"},
+{id:"7",name:"Left door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e5/%D0%9B%D0%B5%D0%B2%D0%B0%D1%8F_%D0%B4%D0%B2%D0%B5%D1%80%D1%8C.png/120px-%D0%9B%D0%B5%D0%B2%D0%B0%D1%8F_%D0%B4%D0%B2%D0%B5%D1%80%D1%8C.png?cb7c41"},
+{id:"8",name:"Right door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f0/Cropped_GolfDoorRight.png/120px-Cropped_GolfDoorRight.png?6cdcd6"},
+{id:"9",name:"Left mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c8/%D0%9B%D0%B5%D0%B2%D0%BE%D0%B5_%D0%B7%D0%B5%D1%80%D0%BA%D0%B0%D0%BB%D0%BE.png/120px-%D0%9B%D0%B5%D0%B2%D0%BE%D0%B5_%D0%B7%D0%B5%D1%80%D0%BA%D0%B0%D0%BB%D0%BE.png?b2a8e7"},
+{id:"10",name:"Right mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/13/%D0%9F%D1%80%D0%B0%D0%B2%D0%BE%D0%B5_%D0%B7%D0%B5%D1%80%D0%BA%D0%B0%D0%BB%D0%BE.png/120px-%D0%9F%D1%80%D0%B0%D0%B2%D0%BE%D0%B5_%D0%B7%D0%B5%D1%80%D0%BA%D0%B0%D0%BB%D0%BE.png?b0afba"},
+{id:"11",name:"Hood",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7d/%D0%9A%D0%B0%D0%BF%D1%8E%D1%88%D0%BE%D0%BD.png/120px-%D0%9A%D0%B0%D0%BF%D1%8E%D1%88%D0%BE%D0%BD.png?d4330f"},
+{id:"12",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/47/%D0%A0%D0%B5%D1%88%D0%B5%D1%82%D0%BA%D0%B0.png/120px-%D0%A0%D0%B5%D1%88%D0%B5%D1%82%D0%BA%D0%B0.png?407bfd"},
+{id:"13",name:"Trunk lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5d/%D0%91%D0%B0%D0%B3%D0%B0%D0%B6%D0%BD%D0%B8%D0%BA.png/120px-%D0%91%D0%B0%D0%B3%D0%B0%D0%B6%D0%BD%D0%B8%D0%BA.png?deb271"},
+{id:"14",name:"Front bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cc/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D0%B1%D0%B0%D0%BC%D0%BF%D0%B5%D1%80.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D0%B1%D0%B0%D0%BC%D0%BF%D0%B5%D1%80.png?7da02b"},
+{id:"15",name:"Front spoiler",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bc/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D1%8F%D1%8F_%D0%B3%D1%83%D0%B1%D0%B0.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D1%8F%D1%8F_%D0%B3%D1%83%D0%B1%D0%B0.png?bcaed9"},
+{id:"16",name:"Rear bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/df/%D0%97%D0%B0%D0%B4%D0%BD%D0%B8%D0%B9_%D0%B1%D0%B0%D0%BC%D0%BF%D0%B5%D1%80.png/120px-%D0%97%D0%B0%D0%B4%D0%BD%D0%B8%D0%B9_%D0%B1%D0%B0%D0%BC%D0%BF%D0%B5%D1%80.png?9a2309"},
+{id:"17",name:"Antenna",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9a/%D0%90%D0%BD%D1%82%D0%B5%D0%BD%D0%BD%D0%B0.png/120px-%D0%90%D0%BD%D1%82%D0%B5%D0%BD%D0%BD%D0%B0.png?853f8b"},
+{id:"18",name:"Front license plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/ad/%D0%9D%D0%BE%D0%BC%D0%B5%D1%80%D0%BD%D0%BE%D0%B9_%D0%B7%D0%BD%D0%B0%D0%BA.png/120px-%D0%9D%D0%BE%D0%BC%D0%B5%D1%80%D0%BD%D0%BE%D0%B9_%D0%B7%D0%BD%D0%B0%D0%BA.png?970122"},
+{id:"19",name:"Rear licence plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/ad/%D0%9D%D0%BE%D0%BC%D0%B5%D1%80%D0%BD%D0%BE%D0%B9_%D0%B7%D0%BD%D0%B0%D0%BA.png/120px-%D0%9D%D0%BE%D0%BC%D0%B5%D1%80%D0%BD%D0%BE%D0%B9_%D0%B7%D0%BD%D0%B0%D0%BA.png?970122"},
+{"id": "20", "name": "Left door panel", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/b/b1/Cropped_GolfDoorPanelLeft.png/120px-Cropped_GolfDoorPanelLeft.png?f0148b"},
+{"id": "21", "name": "Right door panel", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/2/2a/%D0%9F%D1%80%D0%B0%D0%B2%D0%B0%D1%8F_%D0%B4%D0%B2%D0%B5%D1%80%D0%BD%D0%B0%D1%8F_%D0%BF%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C.png/120px-%D0%9F%D1%80%D0%B0%D0%B2%D0%B0%D1%8F_%D0%B4%D0%B2%D0%B5%D1%80%D0%BD%D0%B0%D1%8F_%D0%BF%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C.png?a4dc75"},
+{"id": "22", "name": "Left front seat", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c8/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png?93b766" },
+{ "id": "23", "name": "Right front seat", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c8/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png?93b766" },
+{ "id": "24", "name": "Rear seat", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/6/60/%D0%97%D0%B0%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png/120px-%D0%97%D0%B0%D0%B4%D0%BD%D0%B5%D0%B5_%D1%81%D0%B8%D0%B4%D0%B5%D0%BD%D1%8C%D0%B5.png?7ebebc" },
+{ "id": "25", "name": "Cargo cover", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/6/69/Cropped_GolfCargoCover.png/120px-Cropped_GolfCargoCover.png?b1b144" },
+{ "id": "26", "name": "Gas pedal", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d8/%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D0%B3%D0%B0%D0%B7%D0%B0.png/120px-%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D0%B3%D0%B0%D0%B7%D0%B0.png?4a7a49" },
+{ "id": "27", "name": "Brake pedal", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/d/d7/%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D1%82%D0%BE%D1%80%D0%BC%D0%BE%D0%B7%D0%B0.png/120px-%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D1%82%D0%BE%D1%80%D0%BC%D0%BE%D0%B7%D0%B0.png?31ff36" },
+{ "id": "28", "name": "Clutch pedal", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/d/da/%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D1%81%D1%86%D0%B5%D0%BF%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F.png/120px-%D0%9F%D0%B5%D0%B4%D0%B0%D0%BB%D1%8C_%D1%81%D1%86%D0%B5%D0%BF%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F.png?955ce7" },
+{ "id": "29", "name": "Steering Wheel", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f6/%D0%A0%D1%83%D0%BB%D0%B5%D0%B2%D0%BE%D0%B5_%D0%BA%D0%BE%D0%BB%D0%B5%D1%81%D0%BE.png/120px-%D0%A0%D1%83%D0%BB%D0%B5%D0%B2%D0%BE%D0%B5_%D0%BA%D0%BE%D0%BB%D0%B5%D1%81%D0%BE.png?f23bf8" },
+{ "id": "30", "name": "Handbrake", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/%D0%A0%D1%83%D1%87%D0%BD%D0%BE%D0%B9_%D1%82%D0%BE%D1%80%D0%BC%D0%BE%D0%B7.png/120px-%D0%A0%D1%83%D1%87%D0%BD%D0%BE%D0%B9_%D1%82%D0%BE%D1%80%D0%BC%D0%BE%D0%B7.png?764f85" },
+{ "id": "31", "name": "Shifter", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/77/%D0%9F%D0%B5%D1%80%D0%B5%D0%BA%D0%BB%D1%8E%D1%87%D0%B0%D1%82%D0%B5%D0%BB%D1%8C.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%BA%D0%BB%D1%8E%D1%87%D0%B0%D1%82%D0%B5%D0%BB%D1%8C.png?7ec08c" },
+{ "id": "32", "name": "Ignition", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/c/cd/%D0%97%D0%B0%D0%B6%D0%B8%D0%B3%D0%B0%D0%BD%D0%B8%D0%B5.png/120px-%D0%97%D0%B0%D0%B6%D0%B8%D0%B3%D0%B0%D0%BD%D0%B8%D0%B5.png?982abe" },
+{ "id": "33", "name": "Dashboard", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/3/31/%D0%9F%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C_%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2.png/120px-%D0%9F%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C_%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2.png?8d5a94" },
+{ "id": "34", "name": "Radio", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/a/ac/%D0%A0%D0%B0%D0%B4%D0%B8%D0%BE.png/120px-%D0%A0%D0%B0%D0%B4%D0%B8%D0%BE.png?986757" },
+{ "id": "35", "name": "Glovebox lid", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/2/2d/%D0%9A%D1%80%D1%8B%D1%88%D0%BA%D0%B0_%D0%BF%D0%B5%D1%80%D1%87%D0%B0%D1%82%D0%BE%D1%87%D0%BD%D0%BE%D0%B3%D0%BE_%D1%8F%D1%89%D0%B8%D0%BA%D0%B0.png/120px-%D0%9A%D1%80%D1%8B%D1%88%D0%BA%D0%B0_%D0%BF%D0%B5%D1%80%D1%87%D0%B0%D1%82%D0%BE%D1%87%D0%BD%D0%BE%D0%B3%D0%BE_%D1%8F%D1%89%D0%B8%D0%BA%D0%B0.png?f2eaaa" },
+{ "id": "36", "name": "Left floor mat", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/f/f2/Cropped_GolfFloorMatLeft.png/120px-Cropped_GolfFloorMatLeft.png?5e388a" },
+{ "id": "37", "name": "Right floor mat", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/3/38/%D0%9F%D1%80%D0%B0%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B2%D1%80%D0%B8%D0%BA.png/120px-%D0%9F%D1%80%D0%B0%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B2%D1%80%D0%B8%D0%BA.png?276663" },
+{ "id": "38", "name": "Left visor", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8d/%D0%9B%D0%B5%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B7%D1%8B%D1%80%D0%B5%D0%BA.png/120px-%D0%9B%D0%B5%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B7%D1%8B%D1%80%D0%B5%D0%BA.png?36fdfa" },
+{ "id": "39", "name": "Right visor", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4a/%D0%9F%D1%80%D0%B0%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B7%D1%8B%D1%80%D0%B5%D0%BA.png/120px-%D0%9F%D1%80%D0%B0%D0%B2%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B7%D1%8B%D1%80%D0%B5%D0%BA.png?20aaea" },
+{ "id": "40", "name": "Left seat belt anchor point", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+{ "id": "41", "name": "Right seat belt anchor point", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310" },
+{ "id": "42", "name": "Left seat belt buckle", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+{ "id": "43", "name": "Right seat belt buckle", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba" },
+{ "id": "44", "name": "Wheel 1", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Golf_wheel_ring.png/120px-Golf_wheel_ring.png?be823f" },
+{ "id": "45", "name": "Wheel 2", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Golf_wheel_ring.png/120px-Golf_wheel_ring.png?be823f" },
+{ "id": "46", "name": "Wheel 3", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Golf_wheel_ring.png/120px-Golf_wheel_ring.png?be823f" },
+{ "id": "47", "name": "Wheel 4", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/4/4e/Golf_wheel_ring.png/120px-Golf_wheel_ring.png?be823f" },
+{ "id": "48", "name": "Tire 1", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Golf_tires.png/120px-Golf_tires.png?b7f1de" },
+{ "id": "49", "name": "Tire 2", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Golf_tires.png/120px-Golf_tires.png?b7f1de" },
+{ "id": "50", "name": "Tire 3", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Golf_tires.png/120px-Golf_tires.png?b7f1de" },
+{ "id": "51", "name": "Tire 4", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/Golf_tires.png/120px-Golf_tires.png?b7f1de" },
+{ "id": "52", "name": "Left headlight", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8f/%D0%A4%D0%B0%D1%80%D0%B0.png/120px-%D0%A4%D0%B0%D1%80%D0%B0.png?83e83a" },
+{ "id": "53", "name": "Right headlight", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/8/8f/%D0%A4%D0%B0%D1%80%D0%B0.png/120px-%D0%A4%D0%B0%D1%80%D0%B0.png?83e83a" },
+{ "id": "54", "name": "Left front turn signal", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c5/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D0%B5%D0%BB%D1%8C_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D0%B5%D0%BB%D1%8C_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0.png?8c1fec" },
+{ "id": "55", "name": "Right front turn signal", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/c/c5/%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D0%B5%D0%BB%D1%8C_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0.png/120px-%D0%9F%D0%B5%D1%80%D0%B5%D0%B4%D0%BD%D0%B8%D0%B9_%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D1%82%D0%B5%D0%BB%D1%8C_%D0%BF%D0%BE%D0%B2%D0%BE%D1%80%D0%BE%D1%82%D0%B0.png?8c1fec" },
+{ "id": "56", "name": "Left brake light", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/b/bc/%D0%9B%D0%B5%D0%B2%D1%8B%D0%B9_%D1%81%D1%82%D0%BE%D0%BF-%D1%81%D0%B8%D0%B3%D0%BD%D0%B0%D0%BB.png/120px-%D0%9B%D0%B5%D0%B2%D1%8B%D0%B9_%D1%81%D1%82%D0%BE%D0%BF-%D1%81%D0%B8%D0%B3%D0%BD%D0%B0%D0%BB.png?d0134b" },
+{ "id": "57", "name": "Right brake light", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/Cropped_GolfTaillightRight.png/120px-Cropped_GolfTaillightRight.png?b61559" },
+{ "id": "58", "name": "Interior dome light 1", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+{ "id": "59", "name": "Interior dome light 2", "image": "https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e" },
+      ]},
+{ id:'popoya', name:'Popoya', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/b/b5/PoyopaSunset.jpg/500px-PoyopaSunset.jpg?bc0c23', parts:[
+{id:"1",name:"Engine",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/34/Poyopa_engine.png/120px-Poyopa_engine.png?c3e026"},
+{id:"2",name:"Radiator",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/3c/DadaRadiator.png/120px-DadaRadiator.png?6a1c24"},
+{id:"3",name:"Battery",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/01/DadaBattery50A.png/120px-DadaBattery50A.png?f2b15b"},
+{id:"4",name:"Turbo",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/47/Cropped_Turbo.png/120px-Cropped_Turbo.png?65ddcf"},
+{id:"5",name:"Windshield",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9c/PoyopaFrontWindow.png/120px-PoyopaFrontWindow.png?4c9970"},
+{id:"6",name:"Rear window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c9/PoyopaRearWindow.png/120px-PoyopaRearWindow.png?b93280"},
+{id:"7",name:"Left door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0e/Poyopa_front_left_door.png/120px-Poyopa_front_left_door.png?1cd510"},
+{id:"8",name:"Right door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/87/Poyopa_front_right_door.png/120px-Poyopa_front_right_door.png?f25ef3"},
+{id:"9",name:"Left mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/69/DriveBeyondHorizons-Win64-Shipping_oZFuyJ4wzb.png/120px-DriveBeyondHorizons-Win64-Shipping_oZFuyJ4wzb.png?60cb3f"},
+{id:"10",name:"Right mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/02/DriveBeyondHorizons-Win64-Shipping_2Xoha18d3S.png/120px-DriveBeyondHorizons-Win64-Shipping_2Xoha18d3S.png?2430e7"},
+{id:"11",name:"Hood",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/19/Poyopa_hood.png/120px-Poyopa_hood.png?216c1f"},
+{id:"12",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1a/DriveBeyondHorizons-Win64-Shipping_JYLL9lvOwp.png/120px-DriveBeyondHorizons-Win64-Shipping_JYLL9lvOwp.png?5a8e0dd"},
+{id:"13",name:"Bull bars",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/76/Poyopa_Bull_Bar.png/120px-Poyopa_Bull_Bar.png?f044e5"},
+{id:"14",name:"Front bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/49/DriveBeyondHorizons-Win64-Shipping_SXQiID2UOD.png/120px-DriveBeyondHorizons-Win64-Shipping_SXQiID2UOD.png?4bf999"},
+{id:"15",name:"Rear bumper",image:"https://drivebeyondhorizons.wiki.gg/images/a/aa/Poyopa_rear_bumper.png?706bb0"},
+{id:"16",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1a/DriveBeyondHorizons-Win64-Shipping_JYLL9lvOwp.png/120px-DriveBeyondHorizons-Win64-Shipping_JYLL9lvOwp.png?5a8e0d"},
+{id:"17",name:"Fuel tank lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1c/Poyopa_fuel_tank_lid.png/120px-Poyopa_fuel_tank_lid.png?e9bf98"},
+{id:"18",name:"Roll bar",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1f/PoyopaRollBar.png/120px-PoyopaRollBar.png?5ca948"},
+{id:"19",name:"Tailgate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/DriveBeyondHorizons-Win64-Shipping_yxBdFnXKqT.png/120px-DriveBeyondHorizons-Win64-Shipping_yxBdFnXKqT.png?c7f0f5"},
+{id:"20",name:"Front license plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9"},
+{id:"21",name:"Rear licence plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/58/GoatLicensePlate.png/120px-GoatLicensePlate.png?e6c8f9"},
+{id:"21",name:"Left door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/ae/DriveBeyondHorizons-Win64-Shipping_lsK0vUNezF.png/120px-DriveBeyondHorizons-Win64-Shipping_lsK0vUNezF.png?314517"},
+{id:"22",name:"Right door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b5/DriveBeyondHorizons-Win64-Shipping_jCuH97w4MS.png/120px-DriveBeyondHorizons-Win64-Shipping_jCuH97w4MS.png?54e1db"},
+{id:"23",name:"Left front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/97/PoyopaSeat.png/120px-PoyopaSeat.png?a32224"},
+{id:"24",name:"Right front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/97/PoyopaSeat.png/120px-PoyopaSeat.png?a32224"},
+{id:"25",name:"Center console lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/89/Poyopa_Center_Console_Lid.png/120px-Poyopa_Center_Console_Lid.png?b415e6"},
+{id:"26",name:"Gas pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png/120px-DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png?cfd415"},
+{id:"27",name:"Brake pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png/120px-DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png?cfd415"},
+{id:"28",name:"Clutch pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png/120px-DriveBeyondHorizons-Win64-Shipping_C4GseaRNfn.png?cfd415"},
+{id:"29",name:"Steering Wheel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bd/PoyopaSteeringWheel.png/120px-PoyopaSteeringWheel.png?8d494a"},
+{id:"30",name:"Handbrake",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b5/Poyopa_handbrake.png/120px-Poyopa_handbrake.png?335ace"},
+{id:"31",name:"Shifter",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e4/Imagem_2025-04-10_135454872.png/120px-Imagem_2025-04-10_135454872.png?bc58da"},
+{id:"32",name:"Ignition",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/3f/Poyopa_ignition.png/120px-Poyopa_ignition.png?758ba0"},
+{id:"33",name:"Dashboard",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/dd/PoyopaDashboard.png/120px-PoyopaDashboard.png?b1d322"},
+{id:"34",name:"Radio",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/CarRadio.png/120px-CarRadio.png?9de599"},
+{id:"35",name:"Glovebox lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/18/DriveBeyondHorizons-Win64-Shipping_tnhAP1cVqV.png/120px-DriveBeyondHorizons-Win64-Shipping_tnhAP1cVqV.png?455b2e"},
+{id:"36",name:"Left floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/ec/DriveBeyondHorizons-Win64-Shipping_tFDblvsAxD.png/120px-DriveBeyondHorizons-Win64-Shipping_tFDblvsAxD.png?f194e9"},
+{id:"37",name:"Right floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/13/DriveBeyondHorizons-Win64-Shipping_9SYdlkj1Cy.png/120px-DriveBeyondHorizons-Win64-Shipping_9SYdlkj1Cy.png?d48ca8"},
+{id:"38",name:"Left seat belt anchor point",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310"},
+{id:"39",name:"Right seat belt anchor point",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/42/DadaSeatbeltUpper.png/120px-DadaSeatbeltUpper.png?473310"},
+{id:"41",name:"Left seat belt buckle",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba"},
+{id:"42",name:"Right seat belt buckle",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DadaSeatbeltLower.png/120px-DadaSeatbeltLower.png?1db1ba"},
+{id:"43",name:"Wheel 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Poyopa_Wheel_Rim.png/120px-Poyopa_Wheel_Rim.png?95b4d0"},
+{id:"44",name:"Wheel 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Poyopa_Wheel_Rim.png/120px-Poyopa_Wheel_Rim.png?95b4d0"},
+{id:"45",name:"Wheel 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Poyopa_Wheel_Rim.png/120px-Poyopa_Wheel_Rim.png?95b4d0"},
+{id:"46",name:"Wheel 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6a/Poyopa_Wheel_Rim.png/120px-Poyopa_Wheel_Rim.png?95b4d0"},
+{id:"47",name:"Tire 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Poyopa_Tire.png/120px-Poyopa_Tire.png?d3d6fe"},
+{id:"48",name:"Tire 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Poyopa_Tire.png/120px-Poyopa_Tire.png?d3d6fe"},
+{id:"49",name:"Tire 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Poyopa_Tire.png/120px-Poyopa_Tire.png?d3d6fe"},
+{id:"50",name:"Tire 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7e/Poyopa_Tire.png/120px-Poyopa_Tire.png?d3d6fe"},
+{id:"51",name:"Left headlight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c6/DriveBeyondHorizons-Win64-Shipping_5OrbwAglaS.png/120px-DriveBeyondHorizons-Win64-Shipping_5OrbwAglaS.png?e5b040"},
+{id:"52",name:"Right headlight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8e/DriveBeyondHorizons-Win64-Shipping_gU2CAQxFVv.png/120px-DriveBeyondHorizons-Win64-Shipping_gU2CAQxFVv.png?98bbef"},
+{id:"53",name:"Left front bumper turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/DriveBeyondHorizons-Win64-Shipping_i5NPWrAtu7.png/120px-DriveBeyondHorizons-Win64-Shipping_i5NPWrAtu7.png?bc0a6e"},
+{id:"54",name:"Right front bumper turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/DriveBeyondHorizons-Win64-Shipping_i5NPWrAtu7.png/120px-DriveBeyondHorizons-Win64-Shipping_i5NPWrAtu7.png?bc0a6e"},
+{id:"55",name:"Left taillight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/DriveBeyondHorizons-Win64-Shipping_NjVl0p6PEA.png/120px-DriveBeyondHorizons-Win64-Shipping_NjVl0p6PEA.png?f62e00"},
+{id:"56",name:"Right taillight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/DriveBeyondHorizons-Win64-Shipping_YGeVY76IJe.png/120px-DriveBeyondHorizons-Win64-Shipping_YGeVY76IJe.png?153b0f"},
+{id:"57",name:"Roll bar left light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8b/DadaHeadlight.png/120px-DadaHeadlight.png?c1242d"},
+{id:"58",name:"Roll bar right light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8b/DadaHeadlight.png/120px-DadaHeadlight.png?c1242d"},
+{id:"59",name:"Dome light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e"},
+      ]},
+{ id:'ifa', name:'IFA', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/a/a4/IFA.png/500px-IFA.png?34991b', parts:[
+  {id:"1",name:"Engine",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/90/IFA_engine.png/120px-IFA_engine.png?6340c1"},
+  {id:"2",name:"Radiator",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cd/IFA_radiator.png/120px-IFA_radiator.png?23b333"},
+  {id:"3",name:"Battery",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/13/IFA_battery.png/120px-IFA_battery.png?fc7add"},
+  {id:"4",name:"Windshield",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b9/IFAWindshield.png/120px-IFAWindshield.png?42454c"},
+  {id:"5",name:"Left corner window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/33/Ifa_left_rear_window.png/120px-Ifa_left_rear_window.png?5589ae"},
+  {id:"6",name:"Right corner window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/IFACornerWindow.png/120px-IFACornerWindow.png?196079"},
+  {id:"7",name:"Rear window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0c/Cropped_IFAWindowRear.png/120px-Cropped_IFAWindowRear.png?f242ae"},
+  {id:"8",name:"Left door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a4/Discord_FJHa0N0J0z.png/120px-Discord_FJHa0N0J0z.png?203ead"},
+  {id:"9",name:"Right door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/94/Discord_TNXrlbnBCb.png/120px-Discord_TNXrlbnBCb.png?8bc533"},
+  {id:"10",name:"Left mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/ce/Discord_rQVHydUHuZ.png/120px-Discord_rQVHydUHuZ.png?dcad8b"},
+  {id:"11",name:"Right mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/de/Discord_RGjDPkS3YB.png/120px-Discord_RGjDPkS3YB.png?68cadf"},
+  {id:"12",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a4/Discord_DeEYlrr1aD.png/120px-Discord_DeEYlrr1aD.png?e663c5"},
+  {id:"13",name:"Roof hatch",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8f/Discord_CRo8Zexg6N.png/120px-Discord_CRo8Zexg6N.png?3ea60a"},
+  {id:"14",name:"Front bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2e/IFAFrontBumper.png/120px-IFAFrontBumper.png?69cfb1"},
+  {id:"15",name:"Battery hatch",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/8a/Cropped_IFABatteryCover.png/120px-Cropped_IFABatteryCover.png?db1511"},
+  {id:"16",name:"Cargo bed",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9a/IFA_cargo_bed.png/120px-IFA_cargo_bed.png?654c3d"},
+  {id:"17",name:"Front license plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/40/IFA_Plate.png/120px-IFA_Plate.png?58cfec"},
+  {id:"18",name:"Rear licence plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/40/IFA_Plate.png/120px-IFA_Plate.png?58cfec"},
+  {id:"19",name:"Left door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/23/Discord_bzaIOxvkXj.png/120px-Discord_bzaIOxvkXj.png?25fcf6"},
+  {id:"20",name:"Right door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9f/Cropped_IFADoorRightPanel.png/120px-Cropped_IFADoorRightPanel.png?7cb2db"},
+  {id:"21",name:"Left front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/dd/Discord_It8aHjYPxD.png/120px-Discord_It8aHjYPxD.png?a5d2c8"},
+  {id:"22",name:"Right front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/dd/Discord_It8aHjYPxD.png/120px-Discord_It8aHjYPxD.png?a5d2c8"},
+  {id:"23",name:"Engine hatch",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/12/Discord_4JP1JTKIsm.png/120px-Discord_4JP1JTKIsm.png?d4136b"},
+  {id:"24",name:"Gas pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/Discord_RLJfxQtIFD.png/120px-Discord_RLJfxQtIFD.png?cd383b"},
+  {id:"25",name:"Brake pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e8/Discord_eFbtsfieXJ.png/120px-Discord_eFbtsfieXJ.png?4a30f9"},
+  {id:"26",name:"Clutch pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/73/Discord_X3aECDO11Q.png/120px-Discord_X3aECDO11Q.png?17cbf1"},
+  {id:"27",name:"Steering Wheel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bd/PoyopaSteeringWheel.png/120px-PoyopaSteeringWheel.png?8d494a"},
+  {id:"28",name:"Handbrake",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b8/Discord_4W2J43tLFm.png/120px-Discord_4W2J43tLFm.png?bafed4"},
+  {id:"29",name:"Shifter",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/50/Discord_3nIPA4o9zi.png/120px-Discord_3nIPA4o9zi.png?574aa6"},
+  {id:"30",name:"Ignition",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/04/IFAIgnition.png/120px-IFAIgnition.png?93a601"},
+  {id:"31",name:"Dashboard",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/4b/Discord_KatrNyw86E.png/120px-Discord_KatrNyw86E.png?58fd8f"},
+  {id:"32",name:"Radio",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fa/Discord_zxffcm94jp.png/120px-Discord_zxffcm94jp.png?eea0d1"},
+  {id:"33",name:"Glovebox lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/79/Discord_qF0zUZvgXe.png/120px-Discord_qF0zUZvgXe.png?ce8b4c"},
+  {id:"34",name:"Left floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a0/Cropped_IFAFloorMatLeftRight.png/120px-Cropped_IFAFloorMatLeftRight.png?170614"},
+  {id:"35",name:"Right floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a0/Cropped_IFAFloorMatLeftRight.png/120px-Cropped_IFAFloorMatLeftRight.png?170614"},
+  {id:"36",name:"Wheel 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/Discord_BkgU5p2vev.png/120px-Discord_BkgU5p2vev.png?c7df27"},
+  {id:"37",name:"Wheel 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/Discord_BkgU5p2vev.png/120px-Discord_BkgU5p2vev.png?c7df27"},
+  {id:"38",name:"Wheel 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/Discord_BkgU5p2vev.png/120px-Discord_BkgU5p2vev.png?c7df27"},
+  {id:"39",name:"Wheel 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/52/Discord_BkgU5p2vev.png/120px-Discord_BkgU5p2vev.png?c7df27"},
+  {id:"40",name:"Tire 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Discord_rTyAVcTNu7.png/120px-Discord_rTyAVcTNu7.png?d106b9"},
+  {id:"41",name:"Tire 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Discord_rTyAVcTNu7.png/120px-Discord_rTyAVcTNu7.png?d106b9"},
+  {id:"42",name:"Tire 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Discord_rTyAVcTNu7.png/120px-Discord_rTyAVcTNu7.png?d106b9"},
+  {id:"43",name:"Tire 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Discord_rTyAVcTNu7.png/120px-Discord_rTyAVcTNu7.png?d106b9"},
+  {id:"44",name:"Left headlight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b4/Discord_XfhMjx3lbV.png/120px-Discord_XfhMjx3lbV.png?84670f"},
+  {id:"45",name:"Right headlight",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b4/Discord_XfhMjx3lbV.png/120px-Discord_XfhMjx3lbV.png?84670f"},
+  {id:"46",name:"Left turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/25/Cropped_IFATurnSignalLeft.png/120px-Cropped_IFATurnSignalLeft.png?282bbb"},
+  {id:"47",name:"Right turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b9/DriveBeyondHorizons-Win64-Shipping_WfjAEOEAl3.png/120px-DriveBeyondHorizons-Win64-Shipping_WfjAEOEAl3.png?52db86"},
+  {id:"48",name:"Left brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1c/Discord_GUx8QBqPLi.png/120px-Discord_GUx8QBqPLi.png?d83fdf"},
+  {id:"49",name:"Right brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f5/Discord_TNg8BlvyaG.png/120px-Discord_TNg8BlvyaG.png?279c5d"},
+  {id:"50",name:"Interior dome light 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/87/Cropped_IFALightInterior.png/120px-Cropped_IFALightInterior.png?def41d"},
+  {id:"51",name:"Interior dome light 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/87/Cropped_IFALightInterior.png/120px-Cropped_IFALightInterior.png?def41d"},
+      ]},
+{ id:'triclops', name:'TriClops', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/1/11/Triclops.png/500px-Triclops.png?5957ed', parts:[
+  {id:"1",name:"Engine",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1c/TriclopsEngine.png/120px-TriclopsEngine.png?5f353f"},
+  {id:"2",name:"Radiator",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fc/TriclopsRadiator.png/120px-TriclopsRadiator.png?46e3e0"},
+  {id:"3",name:"Battery",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6e/TriclopsBattery.png/120px-TriclopsBattery.png?286af0"},
+  {id:"4",name:"Windshield",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7b/TriclopsWindshield.png/120px-TriclopsWindshield.png?52450f"},
+  {id:"5",name:"Rear window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2e/TriclopsRearWindow.png/120px-TriclopsRearWindow.png?b2405d"},
+  {id:"6",name:"Left front door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f3/TriclopsFrontDoor.png/120px-TriclopsFrontDoor.png?367911"},
+  {id:"7",name:"Right front door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/TriclopsFrontDoorR.png/120px-TriclopsFrontDoorR.png?348892"},
+  {id:"8",name:"Left rear door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5b/TriclopsRearDoorL.png/120px-TriclopsRearDoorL.png?e3b8c9"},
+  {id:"9",name:"Right rear door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/TriclopsRearDoorR.png/120px-TriclopsRearDoorR.png?d30a0a"},
+  {id:"10",name:"Left mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/de/TriclopsMirrorLeft.png/120px-TriclopsMirrorLeft.png?70a80d"},
+  {id:"11",name:"Right mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d6/TriclopsMirrorRight.png/120px-TriclopsMirrorRight.png?67daf8"},
+  {id:"12",name:"Front trunk lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/TriclopsFrontTrunkLid.png/120px-TriclopsFrontTrunkLid.png?190c8e"},
+  {id:"13",name:"Read hood",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/08/TriclopsRearEngineLid.png/120px-TriclopsRearEngineLid.png?15296f"},
+  {id:"14",name:"Front bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/69/TriclopsFrontBar.png/120px-TriclopsFrontBar.png?76a51e"},
+  {id:"15",name:"Rear bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/45/TriclopsRearBar.png/120px-TriclopsRearBar.png?6fdce0"},
+  {id:"16",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/29/Cropped_TriClopsGrille.png/120px-Cropped_TriClopsGrille.png?d664fc"},
+  {id:"17",name:"Fuel tank lid",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/be/TriclopsFuelTankLid.png/120px-TriclopsFuelTankLid.png?22e35b"},
+  {id:"18",name:"Front license plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6b/Triclops_plate.png/120px-Triclops_plate.png?6b22be"},
+  {id:"19",name:"Rear licence plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6b/Triclops_plate.png/120px-Triclops_plate.png?6b22be"},
+  {id:"20",name:"Left front door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/da/Triclops-front-left-panel.png/120px-Triclops-front-left-panel.png?935913"},
+  {id:"21",name:"Right front door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/Triclops-front-right-panel.png/120px-Triclops-front-right-panel.png?e059dc"},
+  {id:"22",name:"Left rear door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/4c/Triclops-back-left-panel.png/120px-Triclops-back-left-panel.png?839e133"},
+  {id:"23",name:"Right rear door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cb/Triclops-back-right-panel.png/120px-Triclops-back-right-panel.png?ce2c16"},
+  {id:"24",name:"Front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e2/Triclops_front_seat.png/120px-Triclops_front_seat.png?1bae2c"},
+  {id:"25",name:"Rear seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2d/Triclops_back_seat.png/120px-Triclops_back_seat.png?300827"},
+  {id:"26",name:"Gas pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/09/Triclops_gas_pedal.png/120px-Triclops_gas_pedal.png?128e5e"},
+  {id:"27",name:"Brake pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bc/Triclops_break_clutch_pedal.png/120px-Triclops_break_clutch_pedal.png?29f00b"},
+  {id:"28",name:"Clutch pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/85/Triclops_clutch_pedal.png/120px-Triclops_clutch_pedal.png?b3c2a9"},
+  {id:"29",name:"Steering Wheel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/36/TriclopsSteeringWheel.png/120px-TriclopsSteeringWheel.png?5063b3"},
+  {id:"30",name:"Handbrake",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e0/TriclopsHandbrake.png/120px-TriclopsHandbrake.png?c7cc9e"},
+  {id:"31",name:"Shifter",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/17/TriclopsShifter.png/120px-TriclopsShifter.png?f8d48f"},
+  {id:"32",name:"Ignition",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fc/TriClopsIgnition.png/120px-TriClopsIgnition.png?5d4454"},
+  {id:"33",name:"Dashboard",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fe/TriclopsDashboard.png/120px-TriclopsDashboard.png?31d172"},
+  {id:"34",name:"Radio",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/92/TriclopsRadio.png/120px-TriclopsRadio.png?faf7df"},
+  {id:"35",name:"Left visor",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/ef/Triclops_left_visor.png/120px-Triclops_left_visor.png?1c070d"},
+  {id:"36",name:"Right visor",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/03/Triclops_right_visor.png/120px-Triclops_right_visor.png?6a384e"},
+  {id:"37",name:"Wheel 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/TriclopsWheelRim.png/120px-TriclopsWheelRim.png?2ba52d"},
+  {id:"38",name:"Wheel 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/TriclopsWheelRim.png/120px-TriclopsWheelRim.png?2ba52d"},
+  {id:"39",name:"Wheel 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/TriclopsWheelRim.png/120px-TriclopsWheelRim.png?2ba52d"},
+  {id:"40",name:"Wheel 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/46/TriclopsWheelRim.png/120px-TriclopsWheelRim.png?2ba52d"},
+  {id:"41",name:"Tire 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/TriclopsTire.png/120px-TriclopsTire.png?e4c9e7"},
+  {id:"42",name:"Tire 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/TriclopsTire.png/120px-TriclopsTire.png?e4c9e7"},
+  {id:"43",name:"Tire 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/TriclopsTire.png/120px-TriclopsTire.png?e4c9e7"},
+  {id:"44",name:"Tire 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f8/TriclopsTire.png/120px-TriclopsTire.png?e4c9e7"},
+  {id:"45",name:"Headlight 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7c/TriclopsHeadlight.png/120px-TriclopsHeadlight.png?3c5fee"},
+  {id:"46",name:"Headlight 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7c/TriclopsHeadlight.png/120px-TriclopsHeadlight.png?3c5fee"},
+  {id:"47",name:"Headlight 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/7c/TriclopsHeadlight.png/120px-TriclopsHeadlight.png?3c5fee"},
+  {id:"48",name:"Left front turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/5f/Triclops_left_Indicator.png/120px-Triclops_left_Indicator.png?6fb56b"},
+  {id:"49",name:"Right front turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/TriclopsTurnSignal.png/120px-TriclopsTurnSignal.png?a772ac"},
+  {id:"50",name:"Left brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/11/Triclops-brake-light.png/120px-Triclops-brake-light.png?b24c93"},
+  {id:"51",name:"Right brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/11/Triclops-brake-light.png/120px-Triclops-brake-light.png?b24c93"},
+  {id:"52",name:"Hood light 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e"},
+  {id:"53",name:"Hood light 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e"},
+  {id:"54",name:"Interior dome light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e9/DadaInteriorLight.png/120px-DadaInteriorLight.png?41d65e"},
+      ]},
+{ id:'uaz', name:'UAZ', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/b/b3/UAZ_.png/500px-UAZ_.png?de60a2', parts:[
+  {id:"1",name:"Engine",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/21/Cropped_UAZEngine.png/120px-Cropped_UAZEngine.png?6cd566"},
+  {id:"2",name:"Radiator",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/38/Cropped_UAZRadiator.png/120px-Cropped_UAZRadiator.png?3e7c8f"},
+  {id:"3",name:"Battery",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/40/UAZBatterie71A.png/120px-UAZBatterie71A.png?e9bd91"},
+  {id:"4",name:"Windshield",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d0/UAZWindshield.png/120px-UAZWindshield.png?943395"},
+  {id:"5",name:"Side window 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/51/UAZLeftAndRightSmallWindow.png/120px-UAZLeftAndRightSmallWindow.png?1fbcf4"},
+  {id:"6",name:"Side window 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/51/UAZLeftAndRightSmallWindow.png/120px-UAZLeftAndRightSmallWindow.png?1fbcf4"},
+  {id:"7",name:"Large window",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b6/UAZLeftSideBigWindows.png/120px-UAZLeftSideBigWindows.png?7dc94d"},
+  {id:"8",name:"Left front door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/19/UAZLeftFrontDoor.png/120px-UAZLeftFrontDoor.png?946eb2"},
+  {id:"9",name:"Right front door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/be/UAZRightFrontDoor.png/120px-UAZRightFrontDoor.png?f911dc"},
+  {id:"10",name:"Side door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c9/Cropped_UAZDoorSide.png/120px-Cropped_UAZDoorSide.png?3fa0cd"},
+  {id:"11",name:"Left rear door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2c/UAZLeftBackDoor.png/120px-UAZLeftBackDoor.png?aef240"},
+  {id:"12",name:"Right rear door",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a5/UAZRightBackDoor.png/120px-UAZRightBackDoor.png?235f4a"},
+  {id:"13",name:"Left mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/80/UAZMirrorLeft.png/120px-UAZMirrorLeft.png?1026e4"},
+  {id:"14",name:"Right mirror",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d3/UAZMirrorRight.png/120px-UAZMirrorRight.png?13bf28"},
+  {id:"15",name:"Grille",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0d/UAZGrill.png/120px-UAZGrill.png?4163a3"},
+  {id:"16",name:"Rear bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/3b/UAZRearbumper.png/120px-UAZRearbumper.png?c0c6de"},
+  {id:"17",name:"Front bumper",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1f/UAZFrontbumper.png/120px-UAZFrontbumper.png?8bc454"},
+  {id:"18",name:"Ladder",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/63/Ladder.png/120px-Ladder.png?cb6d98"},
+  {id:"19",name:"Cargo rack",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/4/41/UAZRoofStokage.png/120px-UAZRoofStokage.png?7c1d67"},
+  {id:"20",name:"Antenna",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/dc/UAZAntenne.png/120px-UAZAntenne.png?43f18e"},
+  {id:"21",name:"Front license plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/License_plaque.png/120px-License_plaque.png?efdcae"},
+  {id:"22",name:"Rear licence plate",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/db/License_plaque.png/120px-License_plaque.png?efdcae"},
+  {id:"23",name:"Left front door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/37/UAZLeftFrontDoorPanel.png/120px-UAZLeftFrontDoorPanel.png?258454"},
+  {id:"24",name:"Right front door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/3/3a/UAZRightFrontDoorPanel.png/120px-UAZRightFrontDoorPanel.png?5d735e"},
+  {id:"25",name:"Side door panel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/7/70/UAZRightSideDoorPanel.png/120px-UAZRightSideDoorPanel.png?28c72f"},
+  {id:"26",name:"Left front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9a/Cropped_UAZSeatFront.png/120px-Cropped_UAZSeatFront.png?7ebb56"},
+  {id:"27",name:"Right front seat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/9a/Cropped_UAZSeatFront.png/120px-Cropped_UAZSeatFront.png?7ebb56"},
+  {id:"28",name:"Rear seat 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/UAZInsideSit.png/120px-UAZInsideSit.png?e8344e"},
+  {id:"29",name:"Rear seat 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/UAZInsideSit.png/120px-UAZInsideSit.png?e8344e"},
+  {id:"30",name:"Rear seat 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/UAZInsideSit.png/120px-UAZInsideSit.png?e8344e"},
+  {id:"31",name:"Rear seat 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/UAZInsideSit.png/120px-UAZInsideSit.png?e8344e"},
+  {id:"32",name:"Rear seat 5",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/cf/UAZInsideSit.png/120px-UAZInsideSit.png?e8344e"},
+  {id:"33",name:"Left floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e7/UAZDriverCarpet.png/120px-UAZDriverCarpet.png?2ddb22"},
+  {id:"34",name:"Right floor mat",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0f/UAZCarpet.png/120px-UAZCarpet.png?d7f16a"},
+  {id:"35",name:"Gas pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/c/c0/GAS_PEDAL_UAZ.png/120px-GAS_PEDAL_UAZ.png?937253"},
+  {id:"36",name:"Brake pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/5/55/Brake_pedal.png/120px-Brake_pedal.png?7d13db"},
+  {id:"37",name:"Clutch pedal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/e6/UAZClutchPedal.png/120px-UAZClutchPedal.png?219c09"},
+  {id:"38",name:"Steering Wheel",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/8/82/UAZSteeringWheels.png/120px-UAZSteeringWheels.png?ce725b"},
+  {id:"39",name:"Handbrake",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/dd/Cropped_UAZHandbrake.png/120px-Cropped_UAZHandbrake.png?aecfcc"},
+  {id:"40",name:"Shifter",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fb/UAZShiftGear.png/120px-UAZShiftGear.png?a1475a"},
+  {id:"41",name:"Ignition",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d3/UAZIgnition.png/120px-UAZIgnition.png?7986bd"},
+  {id:"42",name:"Dashboard",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/e/ea/Cropped_UAZDashboard.png/120px-Cropped_UAZDashboard.png?4fbd97"},
+  {id:"43",name:"Radio",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/1f/Cropped_UAZRadio.png/120px-Cropped_UAZRadio.png?61c797"},
+  {id:"44",name:"Left visor",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/05/UAZLeftVisor.png/120px-UAZLeftVisor.png?56cdf4"},
+  {id:"45",name:"Right visor",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/f/f9/Cropped_UAZVisorPS.png/120px-Cropped_UAZVisorPS.png?cf214a"},
+  {id:"46",name:"Engine cover",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/ac/UAZMotorTrap.png/120px-UAZMotorTrap.png?803446"},
+  {id:"47",name:"Folding table",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6c/UAZInsideTable.png/120px-UAZInsideTable.png?8e0ac2"},
+  {id:"48",name:"Divider",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/0c/Cropped_UAZPartition.png/120px-Cropped_UAZPartition.png?ddf49b"},
+  {id:"49",name:"Wheel 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/Cropped_UAZWheel.png/120px-Cropped_UAZWheel.png?9eac1d"},
+  {id:"50",name:"Wheel 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/Cropped_UAZWheel.png/120px-Cropped_UAZWheel.png?9eac1d"},
+  {id:"51",name:"Wheel 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/Cropped_UAZWheel.png/120px-Cropped_UAZWheel.png?9eac1d"},
+  {id:"52",name:"Wheel 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/Cropped_UAZWheel.png/120px-Cropped_UAZWheel.png?9eac1d"},
+  {id:"53",name:"Wheel 5",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d9/Cropped_UAZWheel.png/120px-Cropped_UAZWheel.png?9eac1d"},
+  {id:"54",name:"Hubcap 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/UAZHubcap.png/120px-UAZHubcap.png?463a95"},
+  {id:"55",name:"Hubcap 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/UAZHubcap.png/120px-UAZHubcap.png?463a95"},
+  {id:"56",name:"Hubcap 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/UAZHubcap.png/120px-UAZHubcap.png?463a95"},
+  {id:"57",name:"Hubcap 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/UAZHubcap.png/120px-UAZHubcap.png?463a95"},
+  {id:"58",name:"Hubcap 5",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a9/UAZHubcap.png/120px-UAZHubcap.png?463a95"},
+  {id:"59",name:"Tire 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/16/UAZTires.png/120px-UAZTires.png?649f2e"},
+  {id:"60",name:"Tire 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/16/UAZTires.png/120px-UAZTires.png?649f2e"},
+  {id:"61",name:"Tire 3",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/16/UAZTires.png/120px-UAZTires.png?649f2e"},
+  {id:"62",name:"Tire 4",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/16/UAZTires.png/120px-UAZTires.png?649f2e"},
+  {id:"63",name:"Tire 5",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/1/16/UAZTires.png/120px-UAZTires.png?649f2e"},
+  {id:"64",name:"Headlight 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d7/Cropped_UAZHeadlight.png/120px-Cropped_UAZHeadlight.png?c7ca27"},
+  {id:"65",name:"Headlight 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/d/d7/Cropped_UAZHeadlight.png/120px-Cropped_UAZHeadlight.png?c7ca27"},
+  {id:"66",name:"Left front turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/27/UAZFrontBlinkers.png/120px-UAZFrontBlinkers.png?d6549e"},
+  {id:"67",name:"Right front turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/2/27/UAZFrontBlinkers.png/120px-UAZFrontBlinkers.png?d6549e"},
+  {id:"68",name:"Left side turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/UAZSideBlinkers.png/120px-UAZSideBlinkers.png?1873b6"},
+  {id:"69",name:"Right side turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/UAZSideBlinkers.png/120px-UAZSideBlinkers.png?1873b6"},
+  {id:"70",name:"Right front turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6d/TriclopsTurnSignal.png/120px-TriclopsTurnSignal.png?a772ac"},
+  {id:"71",name:"Left brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/05/Cropped_UAZTailLights.png/120px-Cropped_UAZTailLights.png?c26bbf"},
+  {id:"72",name:"Right brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/0/05/Cropped_UAZTailLights.png/120px-Cropped_UAZTailLights.png?c26bbf"},
+  {id:"73",name:"Rear top brake light",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bb/UAZRearTopBreakLight.png/120px-UAZRearTopBreakLight.png?1b0cb2"},
+  {id:"74",name:"Rear left turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bf/UAZRearBumperTailLight.png/120px-UAZRearBumperTailLight.png?786b49"},
+  {id:"75",name:"Rear right turn signal",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/b/bf/UAZRearBumperTailLight.png/120px-UAZRearBumperTailLight.png?786b49"},
+  {id:"76",name:"Reverse light 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/UAZRearLeftTurnSignal.png/120px-UAZRearLeftTurnSignal.png?61ddc6"},
+  {id:"77",name:"Reverse light 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/UAZRearLeftTurnSignal.png/120px-UAZRearLeftTurnSignal.png?61ddc6"},
+  {id:"78",name:"Rear licence plate light 1",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/96/Cropped_UAZLicensePlateLight.png/120px-Cropped_UAZLicensePlateLight.png?f92246"},
+  {id:"79",name:"Rear licence plate light 2",image:"https://drivebeyondhorizons.wiki.gg/images/thumb/9/96/Cropped_UAZLicensePlateLight.png/120px-Cropped_UAZLicensePlateLight.png?f9224"},
+   {"id":"80","name":"Front interior dome light","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/a0/UAZDriverLight.png/120px-UAZDriverLight.png?85c6cd"},
+  {"id":"81","name":"Middle interior dome light","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/8/89/UAZInsideLight.png/120px-UAZInsideLight.png?8fe03a"},
+  {"id":"82","name":"Rear interior dome light","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/b/b7/UAZTrunkLight.png/120px-UAZTrunkLight.png?2981a1"},
+      ]},
+{ id:'trailer', name:'Trailer', image:'https://drivebeyondhorizons.wiki.gg/images/thumb/6/67/Full_Trailer.png/500px-Full_Trailer.png?b748e6', parts:[
+{"id":"1","name":"Tire 1","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6f/TrailerTire.png/120px-TrailerTire.png?e26a0c"},
+  {"id":"2","name":"Tire 2","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/6/6f/TrailerTire.png/120px-TrailerTire.png?e26a0c"},
+  {"id":"3","name":"Wheel 1","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2c/TrailerWheelRim.png/120px-TrailerWheelRim.png?6a559b"},
+  {"id":"4","name":"Wheel 2","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/2/2c/TrailerWheelRim.png/120px-TrailerWheelRim.png?6a559b"},
+  {"id":"5","name":"Licence plate","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/f/fc/TrailerPlate.png/120px-TrailerPlate.png?6df9b4"},
+  {"id":"6","name":"Tail light 1","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/TrailerTailLight.png/120px-TrailerTailLight.png?31a8dd"},
+  {"id":"7","name":"Tail light 2","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/9/98/TrailerTailLight.png/120px-TrailerTailLight.png?31a8dd"},
+  {"id":"8","name":"Tailgate","image":"https://drivebeyondhorizons.wiki.gg/images/thumb/a/aa/Lid.png/120px-Lid.png?bc3621"},
+      ]},
+                                  
+    ];
+
+    // 🔐 Persistance
+const STORAGE_KEY = 'dbh-checked-v1';
+
+// 🔐 Persistance
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+const state = loadState();
+
+// GALERIE
+const galleryEl = document.getElementById('gallery');
+function renderGallery() {
+  galleryEl.innerHTML = '';
+  CARS.forEach(car => {
+    const fig = document.createElement('figure');
+    fig.className = 'card';
+    fig.tabIndex = 0;
+    fig.setAttribute('role','link');
+
+    // clic / clavier
+    fig.addEventListener('click', () => openCar(car.id));
+    fig.addEventListener('keydown', e => { if(e.key === 'Enter') openCar(car.id); });
+
+    const img = document.createElement('img');
+    img.src = car.image; img.alt = car.name;
+
+    const cap = document.createElement('figcaption');
+    cap.textContent = car.name;
+
+    fig.appendChild(img);
+    fig.appendChild(cap);
+    galleryEl.appendChild(fig);
+  });
+}
+
+// PAGE VOITURE
+const carView = document.getElementById('carView');
+const partsList = document.getElementById('partsList');
+const carTitle = document.getElementById('carTitle');
+const carHeroImg = document.getElementById('carHeroImg');
+
+function renderCar(car) {
+  carTitle.textContent = car.name;
+  carHeroImg.src = car.image;
+  carHeroImg.alt = car.name;
+
+  // PAGE CREDITS & INFOS
+  if(car.id === "credits&infos") {
+    carHeroImg.style.width = "100px";
+    carHeroImg.style.margin = "20px auto";
+    carHeroImg.style.display = "block";
+
+    partsList.innerHTML = `
+      
+    `;
+    return;
+  }
+
+  // COMPORTEMENT NORMAL POUR LES VOITURES
+  state[car.id] = state[car.id] || {};
+  partsList.innerHTML = '';
+
+  car.parts.forEach(part => {
+    const isChecked = !!state[car.id][part.id];
+    const row = document.createElement('div');
+    row.className = 'part' + (isChecked ? ' checked' : '');
+    row.dataset.partId = part.id;
+
+    const img = document.createElement('img');
+    img.src = part.image; img.alt = part.name;
+
+    const info = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = part.name;
+    info.appendChild(name);
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = isChecked;
+    cb.setAttribute('aria-label', `Cocher ${part.name}`);
+
+    function toggle(to) {
+      const next = (typeof to === 'boolean') ? to : !cb.checked;
+      cb.checked = next;
+      state[car.id][part.id] = next;
+      row.classList.toggle('checked', next);
+      saveState(state);
+    }
+
+    cb.addEventListener('change', () => toggle(cb.checked));
+    row.addEventListener('click', e => { if(e.target.tagName.toLowerCase() !== 'input') toggle(); });
+
+    row.appendChild(img);
+    row.appendChild(info);
+    row.appendChild(cb);
+    partsList.appendChild(row);
+  });
+}
+
+// FOOTER VISIBILITY
+const footer = document.querySelector("footer");
+function updateFooterVisibility() {
+  const hash = location.hash.replace("#", "");
+  if (!hash) footer.classList.remove("hidden"); // page principale
+  else footer.classList.add("hidden");         // page voiture ou autres
+}
+updateFooterVisibility();
+window.addEventListener("hashchange", updateFooterVisibility);
+
+// NAVIGATION HASH
+const backBtn = document.getElementById('backBtn');
+backBtn.addEventListener('click', () => { location.hash = ''; });
+
+function openCar(carId) { location.hash = `#${carId}`; }
+
+function onRouteChange() {
+  const id = decodeURIComponent(location.hash.replace('#',''));
+  const car = CARS.find(c => c.id === id);
+  if(car){
+    document.title = `DBH Builder – ${car.name}`;
+    galleryEl.classList.add('hidden');
+    carView.classList.remove('hidden');
+    renderCar(car);
+  } else {
+    document.title = 'DBH Builder';
+    carView.classList.add('hidden');
+    galleryEl.classList.remove('hidden');
+  }
+}
+
+window.addEventListener('hashchange', onRouteChange);
+
+// INIT
+renderGallery();
+onRouteChange();
+  </script>
+</body>
+</html>
